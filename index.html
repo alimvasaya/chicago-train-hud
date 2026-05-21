@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Meta Ray-Ban Display: fixed 600x600 viewport, no zoom -->
+  <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+  <title>Chicago Trains</title>
+  <link rel="icon" href="icon-96.png" sizes="96x96">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+
+    <!-- Screen 1: start -->
+    <section id="screen-start" class="screen">
+      <h1>Chicago Trains</h1>
+      <p class="hint">CTA &amp; Metra arrivals near you</p>
+      <button id="btn-find" class="focusable" data-screen="locate">Find my trains</button>
+    </section>
+
+    <!-- Screen 2: status (loading / errors) -->
+    <section id="screen-status" class="screen hidden">
+      <p id="status-text" class="status">Locating you…</p>
+      <button id="btn-retry" class="focusable hidden">Try again</button>
+    </section>
+
+    <!-- Screen 3: results -->
+    <section id="screen-results" class="screen hidden">
+      <div class="station-head">
+        <div id="station-name" class="station-name">—</div>
+        <div id="station-meta" class="station-meta">—</div>
+      </div>
+
+      <ul id="trains" class="trains"><!-- filled by JS --></ul>
+
+      <div class="controls">
+        <button id="btn-prev" class="focusable arrow">◀ Prev stop</button>
+        <button id="btn-refresh" class="focusable">Refresh</button>
+        <button id="btn-next" class="focusable arrow">Next stop ▶</button>
+      </div>
+    </section>
+
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+/* Meta Ray-Ban Display is an ADDITIVE waveguide:
+   - pure black (#000) renders as fully transparent
+   - bright, high-contrast colors are the most legible
+   - fixed 600x600 viewport, no scrolling
+   - body text >= 16px, primary content 20-24px+                      */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 600px;
+  height: 600px;
+  overflow: hidden;
+  background: #000;                 /* transparent on the display */
+  color: #eafff0;
+  font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 600px;
+  height: 600px;
+  position: relative;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 48px;
+  text-align: center;
+}
+
+.hidden { display: none !important; }
+
+h1 {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #00ff9c;
+  text-shadow: 0 0 18px rgba(0, 255, 156, 0.45);
+}
+
+.hint { font-size: 24px; color: #9fe9c6; }
+
+.status { font-size: 30px; color: #ffe27a; line-height: 1.4; }
+
+/* --- Results --- */
+.station-head { margin-bottom: 8px; }
+.station-name {
+  font-size: 46px;
+  font-weight: 800;
+  color: #00ff9c;
+  text-shadow: 0 0 16px rgba(0, 255, 156, 0.4);
+  line-height: 1.05;
+}
+.station-meta { font-size: 22px; color: #9fe9c6; margin-top: 6px; }
+
+.trains {
+  list-style: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 22px 0;
+}
+.train {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 8px;
+}
+.train .dest { font-size: 34px; font-weight: 700; color: #eafff0; }
+.train .eta  { font-size: 40px; font-weight: 800; color: #ffe27a; }
+.train .delay { font-size: 22px; font-weight: 700; color: #ff5a5a; margin-left: 10px; }
+.train.empty { font-size: 30px; color: #9fe9c6; justify-content: center; }
+
+/* --- Buttons / focus (D-pad navigation) --- */
+.controls {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.focusable {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: 700;
+  color: #eafff0;
+  background: rgba(0, 255, 156, 0.08);
+  border: 3px solid rgba(0, 255, 156, 0.35);
+  border-radius: 16px;
+  padding: 18px 30px;
+  min-height: 88px;            /* glasses minimum tap target */
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+.focusable.arrow { font-size: 22px; }
+
+.focusable:focus {
+  outline: none;
+  border-color: #00ff9c;
+  background: rgba(0, 255, 156, 0.22);
+  box-shadow: 0 0 26px rgba(0, 255, 156, 0.55);
+}
