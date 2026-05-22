@@ -19,6 +19,17 @@ project (that's what kept failing before).
 
 ---
 
+## Buses (CTA Bus Tracker)
+
+Buses use a SEPARATE key and a stop-location file:
+1. Request a free CTA Bus Tracker key at https://www.transitchicago.com/developers/bustracker/
+   Add it in Vercel as env var `BUSTRACKER_KEY`.
+2. Download the official "CTA Bus Stops" dataset as CSV from
+   https://data.cityofchicago.org/Transportation/CTA-Bus-Stops/hvnx-qtky
+   (Export -> CSV), then generate the stop file:
+   `python3 build/gen_bus_stops.py path/to/CTA_Bus_Stops.csv`
+   That writes `api/_bus_stops.js`. Until it's populated, the app shows trains only.
+
 ## Step 1 — Get your free API keys
 
 **CTA (required):** Go to https://www.transitchicago.com/developers/ttdocs/ and

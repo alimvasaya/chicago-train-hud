@@ -1,20 +1,16 @@
 /* Chicago Train HUD — Meta Ray-Ban Display web app
  *
- * Real platform facts this is built around (per Meta's docs, May 14 2026):
- *  - Input arrives as standard ArrowUp/Down/Left/Right + Enter key events
- *    (the Neural Band & temple touch strip are translated to these).
- *  - There is NO proprietary "RayBan" SDK to import. Standard web APIs only.
- *  - GPS is the standard navigator.geolocation API (sourced from the phone).
- *  - Permission prompts must be triggered by a user gesture (an Enter press).
+ * Platform facts (per Meta docs):
+ *  - Neural Band / temple swipes arrive as ArrowLeft/Right/Up/Down + Enter.
+ *  - GPS is standard navigator.geolocation (from the paired phone).
+ *  - Permission must be requested from a user gesture (the first Enter press).
  *
- * Data flows through our own /api/trains proxy so that (a) CORS works and
- * (b) the Metra protobuf feed is decoded server-side.
+ * UX: one press to start, then it auto-locates and auto-refreshes. The nearest
+ * station shows by default; ◀ / ▶ cycle to other nearby stations; ⏎ refreshes.
  */
-
 (function () {
   'use strict';
 
-  // --- screens ---
   var screens = {
     start:   document.getElementById('screen-start'),
     status:  document.getElementById('screen-status'),
@@ -23,100 +19,101 @@
   var statusText = document.getElementById('status-text');
   var btnRetry   = document.getElementById('btn-retry');
 
-  var stations = [];   // nearest stations returned by the API
-  var idx = 0;         // which station is currently shown
+  var stations = [];
+  var idx = 0;
+  var lastCoords = null;
+  var refreshTimer = null;
+  var current = 'start';
+
+  var REFRESH_MS = 30000;
 
   function show(name) {
+    current = name;
     Object.keys(screens).forEach(function (k) {
       screens[k].classList.toggle('hidden', k !== name);
     });
-    // focus the first focusable element on the newly shown screen
-    var first = screens[name].querySelector('.focusable:not(.hidden)');
-    if (first) first.focus();
+    var f = screens[name].querySelector('.focusable:not(.hidden)');
+    if (f) f.focus();
   }
 
-  function setStatus(msg, showRetry) {
+  function setStatus(msg, retry) {
     statusText.textContent = msg;
-    btnRetry.classList.toggle('hidden', !showRetry);
+    btnRetry.classList.toggle('hidden', !retry);
     show('status');
   }
 
-  // ---------------------------------------------------------------------
-  // D-pad focus management (Meta reference pattern)
-  // ---------------------------------------------------------------------
-  function moveFocus(direction) {
-    var focusables = Array.prototype.slice.call(
-      document.querySelectorAll('.screen:not(.hidden) .focusable:not([disabled]):not(.hidden)')
-    );
-    if (!focusables.length) return;
-    var i = focusables.indexOf(document.activeElement);
-    if (i === -1) { focusables[0].focus(); return; }
-    var next = (direction === 'prev')
-      ? (i > 0 ? i - 1 : focusables.length - 1)
-      : (i < focusables.length - 1 ? i + 1 : 0);
-    focusables[next].focus();
-  }
-
+  // ---- input: global D-pad handling (simple + glanceable) ----
   document.addEventListener('keydown', function (e) {
-    switch (e.key) {
-      case 'ArrowUp':
-      case 'ArrowLeft':  moveFocus('prev'); break;
-      case 'ArrowDown':
-      case 'ArrowRight': moveFocus('next'); break;
-      case 'Enter':
-        if (document.activeElement &&
-            document.activeElement.classList.contains('focusable')) {
-          document.activeElement.click();
-        }
-        break;
-      default: return;
+    if (current === 'results') {
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':    step(-1); e.preventDefault(); return;
+        case 'ArrowRight':
+        case 'ArrowDown':  step(1);  e.preventDefault(); return;
+        case 'Enter':      refresh(); e.preventDefault(); return;
+      }
+    } else if (e.key === 'Enter') {
+      var f = screens[current].querySelector('.focusable:not(.hidden)');
+      if (f) { f.click(); e.preventDefault(); }
     }
-    e.preventDefault();
   });
 
-  // ---------------------------------------------------------------------
-  // Location + data
-  // ---------------------------------------------------------------------
+  // ---- location + data ----
   function locate() {
     setStatus('Locating you…', false);
-
-    if (!navigator.geolocation) {
-      setStatus('This device has no location support.', true);
-      return;
-    }
-
+    if (!navigator.geolocation) { setStatus('No location support on this device.', true); return; }
     navigator.geolocation.getCurrentPosition(
       function (pos) {
-        fetchTrains(pos.coords.latitude, pos.coords.longitude);
+        lastCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        fetchTrains();
       },
       function (err) {
-        var msg = 'Could not get your location.';
-        if (err.code === 1) msg = 'Location permission denied.';
-        else if (err.code === 2) msg = 'Location unavailable. Is your phone online?';
-        else if (err.code === 3) msg = 'Location timed out. Try again.';
-        setStatus(msg, true);
+        var m = 'Could not get your location.';
+        if (err.code === 1) m = 'Location permission denied.';
+        else if (err.code === 2) m = 'Location unavailable. Is your phone online?';
+        else if (err.code === 3) m = 'Location timed out.';
+        setStatus(m, true);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
   }
 
-  function fetchTrains(lat, lon) {
-    setStatus('Loading arrivals…', false);
-    fetch('/api/trains?lat=' + lat + '&lon=' + lon)
+  // Refresh re-reads GPS (so it follows you down the platform), then reloads data.
+  function refresh() {
+    if (!navigator.geolocation) { fetchTrains(); return; }
+    navigator.geolocation.getCurrentPosition(
+      function (pos) { lastCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude }; fetchTrains(); },
+      function () { fetchTrains(); },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+    );
+  }
+
+  function fetchTrains() {
+    if (!lastCoords) return;
+    fetch('/api/trains?lat=' + lastCoords.lat + '&lon=' + lastCoords.lon)
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        stations = (data && data.stations) || [];
-        if (!stations.length) {
-          setStatus('No nearby stations found.', true);
-          return;
-        }
+        var next = (data && data.stations) || [];
+        if (!next.length) { setStatus('No nearby stations found.', true); return; }
+        // keep the station the user was viewing if it still exists
+        var keepName = stations[idx] && stations[idx].name;
+        stations = next;
         idx = 0;
+        if (keepName) {
+          for (var i = 0; i < stations.length; i++) {
+            if (stations[i].name === keepName) { idx = i; break; }
+          }
+        }
         render();
         show('results');
+        scheduleRefresh();
       })
-      .catch(function () {
-        setStatus('Could not reach the train service.', true);
-      });
+      .catch(function () { setStatus('Could not reach the train service.', true); });
+  }
+
+  function scheduleRefresh() {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(function () { if (current === 'results') refresh(); }, REFRESH_MS);
   }
 
   function render() {
@@ -124,51 +121,69 @@
     if (!s) return;
 
     document.getElementById('station-name').textContent = s.name;
-    var meters = (typeof s.dist_m === 'number') ? '  ·  ' + s.dist_m + ' m' : '';
-    document.getElementById('station-meta').textContent =
-      s.line + meters + '   (' + (idx + 1) + '/' + stations.length + ')';
+
+    var chips = document.getElementById('line-chips');
+    chips.innerHTML = '';
+    if (s.kind) {
+      var k = document.createElement('span');
+      k.className = 'chip kind';
+      k.textContent = s.kind;
+      chips.appendChild(k);
+    }
+    (s.lines || []).forEach(function (l) {
+      var c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = l.label;
+      c.style.background = l.color;
+      // yellow needs dark text to stay legible
+      c.style.color = (l.color.toLowerCase() === '#f9e300') ? '#1a1400' : '#fff';
+      chips.appendChild(c);
+    });
+
+    document.getElementById('station-dist').textContent =
+      (typeof s.dist_m === 'number' ? s.dist_m + ' m away' : '');
+    document.getElementById('pager').textContent = (idx + 1) + ' / ' + stations.length;
 
     var list = document.getElementById('trains');
     list.innerHTML = '';
     if (!s.trains || !s.trains.length) {
       var li = document.createElement('li');
       li.className = 'train empty';
-      li.textContent = 'No upcoming trains';
+      li.textContent = (s.system === 'bus')
+        ? 'No buses soon'
+        : (s.system === 'metra' ? 'No scheduled trains' : 'No upcoming trains');
       list.appendChild(li);
       return;
     }
     s.trains.forEach(function (t) {
       var li = document.createElement('li');
       li.className = 'train';
-      var eta = (t.eta_min <= 0) ? 'Due' : t.eta_min + ' min';
+      var due = t.approaching || t.eta_min <= 0;
+      var etaHtml = due ? 'Due' : (t.eta_min + '<small> min</small>');
+      var delay = t.delayed ? '<span class="delay">DELAYED</span>' : '';
       li.innerHTML =
-        '<span class="dest">' + escapeHtml(t.dest) + '</span>' +
-        '<span class="eta">' + eta +
-        (t.delayed ? '<span class="delay">DELAY</span>' : '') + '</span>';
+        '<span class="dot" style="background:' + t.color + ';color:' + t.color + '"></span>' +
+        '<span class="body">' +
+          '<span class="dest">' + esc(t.dest) + '</span>' +
+          '<span class="line" style="color:' + t.color + '">' + esc(t.line) + '</span>' +
+        '</span>' +
+        '<span class="eta">' + etaHtml + delay + '</span>';
       list.appendChild(li);
     });
   }
 
-  function escapeHtml(str) {
-    return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  function step(delta) {
+  function step(d) {
     if (!stations.length) return;
-    idx = (idx + delta + stations.length) % stations.length;
+    idx = (idx + d + stations.length) % stations.length;
     render();
   }
 
-  // ---------------------------------------------------------------------
-  // Wire up buttons
-  // ---------------------------------------------------------------------
   document.getElementById('btn-find').addEventListener('click', locate);
   btnRetry.addEventListener('click', locate);
-  document.getElementById('btn-refresh').addEventListener('click', locate);
-  document.getElementById('btn-prev').addEventListener('click', function () { step(-1); });
-  document.getElementById('btn-next').addEventListener('click', function () { step(1); });
 
-  // Start on the first screen with focus ready.
   show('start');
 })();

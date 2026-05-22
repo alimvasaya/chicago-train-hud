@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "CTA + Metra train HUD for Meta Ray-Ban Display glasses (web app).",
-  "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev"
-  },
   "dependencies": {
     "gtfs-realtime-bindings": "^1.1.1"
   }

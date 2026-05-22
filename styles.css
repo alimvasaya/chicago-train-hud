@@ -1,8 +1,7 @@
-/* Meta Ray-Ban Display is an ADDITIVE waveguide:
-   - pure black (#000) renders as fully transparent
-   - bright, high-contrast colors are the most legible
-   - fixed 600x600 viewport, no scrolling
-   - body text >= 16px, primary content 20-24px+                      */
+/* Meta Ray-Ban Display: additive waveguide.
+   - pure black (#000) = fully transparent on the lens
+   - bright, high-contrast colors read best
+   - fixed 600x600, no scrolling, body text >= 16px              */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -10,101 +9,98 @@ body {
   width: 600px;
   height: 600px;
   overflow: hidden;
-  background: #000;                 /* transparent on the display */
-  color: #eafff0;
+  background: #000;
+  color: #f2fff7;
   font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-#app {
-  width: 600px;
-  height: 600px;
-  position: relative;
-}
+#app { position: relative; width: 600px; height: 600px; }
 
 .screen {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 48px;
-  text-align: center;
+  padding: 40px 44px;
 }
 
 .hidden { display: none !important; }
 
-h1 {
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #00ff9c;
-  text-shadow: 0 0 18px rgba(0, 255, 156, 0.45);
+/* ---------- Start / status ---------- */
+#screen-start, #screen-status {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 30px;
 }
-
+.logo {
+  font-size: 60px; font-weight: 900; line-height: 1.0; letter-spacing: 1px;
+  color: #00ff9c; text-shadow: 0 0 22px rgba(0,255,156,.5);
+}
 .hint { font-size: 24px; color: #9fe9c6; }
-
 .status { font-size: 30px; color: #ffe27a; line-height: 1.4; }
 
-/* --- Results --- */
-.station-head { margin-bottom: 8px; }
-.station-name {
-  font-size: 46px;
-  font-weight: 800;
-  color: #00ff9c;
-  text-shadow: 0 0 16px rgba(0, 255, 156, 0.4);
-  line-height: 1.05;
+.focusable.cta {
+  font-family: inherit; font-size: 30px; font-weight: 800;
+  color: #001b10; background: #00ff9c;
+  border: none; border-radius: 18px;
+  padding: 22px 40px; min-height: 88px; cursor: pointer;
+  transition: box-shadow 140ms ease, transform 140ms ease;
 }
-.station-meta { font-size: 22px; color: #9fe9c6; margin-top: 6px; }
+.focusable.cta:focus {
+  outline: none; transform: scale(1.03);
+  box-shadow: 0 0 30px rgba(0,255,156,.7);
+}
+
+/* ---------- Results ---------- */
+.rhead { flex: 0 0 auto; }
+.station-name {
+  font-size: 50px; font-weight: 800; line-height: 1.04;
+  color: #00ff9c; text-shadow: 0 0 16px rgba(0,255,156,.4);
+}
+.subrow {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; gap: 12px;
+}
+.line-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  font-size: 18px; font-weight: 800; color: #fff;
+  padding: 4px 12px; border-radius: 999px; white-space: nowrap;
+}
+.chip.kind { background: transparent; color: #9fe9c6; border: 2px solid #2f6f57; font-size: 16px; padding: 2px 10px; }
+.dist { font-size: 20px; color: #9fe9c6; white-space: nowrap; }
 
 .trains {
-  list-style: none;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 22px 0;
+  list-style: none; flex: 1 1 auto;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 16px; margin: 18px 0;
 }
 .train {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 4px 8px;
+  display: flex; align-items: center; gap: 18px;
 }
-.train .dest { font-size: 34px; font-weight: 700; color: #eafff0; }
-.train .eta  { font-size: 40px; font-weight: 800; color: #ffe27a; }
-.train .delay { font-size: 22px; font-weight: 700; color: #ff5a5a; margin-left: 10px; }
-.train.empty { font-size: 30px; color: #9fe9c6; justify-content: center; }
+.dot {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+  box-shadow: 0 0 12px currentColor;
+}
+.train .body { flex: 1 1 auto; min-width: 0; }
+.train .dest {
+  font-size: 34px; font-weight: 700; color: #f2fff7;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.train .line { font-size: 18px; font-weight: 700; opacity: .85; }
+.train .eta {
+  flex: 0 0 auto; font-size: 40px; font-weight: 900; color: #ffe27a;
+  text-align: right;
+}
+.train .eta small { font-size: 20px; font-weight: 700; }
+.train .delay { display: block; font-size: 16px; font-weight: 800; color: #ff5a5a; text-align: right; }
+.train.empty { justify-content: center; color: #9fe9c6; font-size: 30px; }
 
-/* --- Buttons / focus (D-pad navigation) --- */
-.controls {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  justify-content: center;
-  flex-wrap: wrap;
+.rfoot {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 18px; color: #7fd9b4;
 }
-
-.focusable {
-  font-family: inherit;
-  font-size: 26px;
-  font-weight: 700;
-  color: #eafff0;
-  background: rgba(0, 255, 156, 0.08);
-  border: 3px solid rgba(0, 255, 156, 0.35);
-  border-radius: 16px;
-  padding: 18px 30px;
-  min-height: 88px;            /* glasses minimum tap target */
-  cursor: pointer;
-  transition: all 140ms ease;
-}
-.focusable.arrow { font-size: 22px; }
-
-.focusable:focus {
-  outline: none;
-  border-color: #00ff9c;
-  background: rgba(0, 255, 156, 0.22);
-  box-shadow: 0 0 26px rgba(0, 255, 156, 0.55);
-}
+.pager { font-weight: 800; color: #00ff9c; }
+.nav-hint { opacity: .7; }

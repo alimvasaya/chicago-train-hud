@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Meta Ray-Ban Display: fixed 600x600 viewport, no zoom -->
   <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
   <title>Chicago Trains</title>
   <link rel="icon" href="icon-96.png" sizes="96x96">
@@ -11,33 +10,35 @@
 <body>
   <main id="app">
 
-    <!-- Screen 1: start -->
+    <!-- Screen 1: start (one press grants location permission) -->
     <section id="screen-start" class="screen">
-      <h1>Chicago Trains</h1>
-      <p class="hint">CTA &amp; Metra arrivals near you</p>
-      <button id="btn-find" class="focusable" data-screen="locate">Find my trains</button>
+      <div class="logo">CHICAGO<br>TRAINS</div>
+      <p class="hint">Live CTA &amp; Metra near you</p>
+      <button id="btn-find" class="focusable cta">Show my trains</button>
     </section>
 
-    <!-- Screen 2: status (loading / errors) -->
+    <!-- Screen 2: status / errors -->
     <section id="screen-status" class="screen hidden">
       <p id="status-text" class="status">Locating you…</p>
-      <button id="btn-retry" class="focusable hidden">Try again</button>
+      <button id="btn-retry" class="focusable cta hidden">Try again</button>
     </section>
 
     <!-- Screen 3: results -->
     <section id="screen-results" class="screen hidden">
-      <div class="station-head">
+      <header class="rhead">
         <div id="station-name" class="station-name">—</div>
-        <div id="station-meta" class="station-meta">—</div>
-      </div>
+        <div class="subrow">
+          <span id="line-chips" class="line-chips"></span>
+          <span id="station-dist" class="dist"></span>
+        </div>
+      </header>
 
-      <ul id="trains" class="trains"><!-- filled by JS --></ul>
+      <ul id="trains" class="trains"></ul>
 
-      <div class="controls">
-        <button id="btn-prev" class="focusable arrow">◀ Prev stop</button>
-        <button id="btn-refresh" class="focusable">Refresh</button>
-        <button id="btn-next" class="focusable arrow">Next stop ▶</button>
-      </div>
+      <footer class="rfoot">
+        <span id="pager" class="pager">1 / 1</span>
+        <span class="nav-hint">◀ ▶ stations &nbsp;·&nbsp; ⏎ refresh</span>
+      </footer>
     </section>
 
   </main>
